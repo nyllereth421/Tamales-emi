@@ -2,8 +2,7 @@ const PRECIO_UNITARIO = 6000;
 const NUMERO_WHATSAPP = "573104852208";
 
 const form = document.getElementById("formPedido");
-const cantidadInput = document.getElementById("cantidad");
-const saborInput = document.getElementById("sabor");
+const cantidadesSabor = Array.from(document.querySelectorAll(".cantidad-sabor"));
 const fechaInput = document.getElementById("fecha");
 const direccionInput = document.getElementById("direccion");
 const resumenProducto = document.getElementById("resumenProducto");
@@ -21,18 +20,43 @@ function obtenerValorRadio(nombre) {
     return seleccionado ? seleccionado.value : "";
 }
 
-function obtenerCantidad() {
-    const cantidad = Number.parseInt(cantidadInput.value, 10);
+function normalizarCantidad(valor) {
+    const cantidad = Number.parseInt(valor, 10);
     return Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 0;
 }
 
-function actualizarResumen() {
-    const cantidad = obtenerCantidad();
-    const sabor = saborInput.value;
-    const total = cantidad * PRECIO_UNITARIO;
-    const unidad = cantidad === 1 ? "tamal" : "tamales";
+function obtenerSaboresPedido() {
+    return cantidadesSabor
+        .map((input) => ({
+            sabor: input.dataset.sabor,
+            cantidad: normalizarCantidad(input.value)
+        }))
+        .filter((item) => item.cantidad > 0);
+}
 
-    resumenProducto.textContent = `${cantidad || 0} ${unidad} de ${sabor}`;
+function obtenerCantidadTotal(sabores = obtenerSaboresPedido()) {
+    return sabores.reduce((total, item) => total + item.cantidad, 0);
+}
+
+function formatearSabores(sabores) {
+    if (sabores.length === 0) {
+        return "Sin sabores seleccionados";
+    }
+
+    return sabores
+        .map((item) => {
+            const unidad = item.cantidad === 1 ? "tamal" : "tamales";
+            return `${item.cantidad} ${unidad} de ${item.sabor}`;
+        })
+        .join(", ");
+}
+
+function actualizarResumen() {
+    const sabores = obtenerSaboresPedido();
+    const cantidad = obtenerCantidadTotal(sabores);
+    const total = cantidad * PRECIO_UNITARIO;
+
+    resumenProducto.textContent = formatearSabores(sabores);
     totalPago.textContent = formatoMoneda.format(total);
 }
 
@@ -59,8 +83,8 @@ function validarPedido(datos) {
         return "Completa nombre, telefono, fecha y hora para continuar.";
     }
 
-    if (datos.cantidad < 1) {
-        return "La cantidad debe ser minimo 1.";
+    if (datos.cantidadTotal < 1) {
+        return "Agrega al menos 1 tamal en cualquier sabor.";
     }
 
     if (datos.entrega === "Domicilio" && !datos.direccion) {
@@ -71,13 +95,14 @@ function validarPedido(datos) {
 }
 
 function leerDatosFormulario() {
-    const cantidad = obtenerCantidad();
+    const sabores = obtenerSaboresPedido();
+    const cantidadTotal = obtenerCantidadTotal(sabores);
 
     return {
         nombre: document.getElementById("nombre").value.trim(),
         telefono: document.getElementById("telefono").value.trim(),
-        sabor: saborInput.value,
-        cantidad,
+        sabores,
+        cantidadTotal,
         termico: obtenerValorRadio("termico"),
         entrega: obtenerValorRadio("entrega"),
         fecha: fechaInput.value,
@@ -85,7 +110,7 @@ function leerDatosFormulario() {
         direccion: direccionInput.value.trim(),
         pago: document.getElementById("pago").value,
         notas: document.getElementById("notas").value.trim(),
-        total: cantidad * PRECIO_UNITARIO
+        total: cantidadTotal * PRECIO_UNITARIO
     };
 }
 
@@ -99,8 +124,9 @@ function crearMensajeWhatsApp(datos) {
         `*Cliente:* ${datos.nombre}`,
         `*Telefono:* ${datos.telefono}`,
         "",
-        `*Sabor:* ${datos.sabor}`,
-        `*Cantidad:* ${datos.cantidad}`,
+        "*Sabores:*",
+        ...datos.sabores.map((item) => `- ${item.sabor}: ${item.cantidad}`),
+        `*Cantidad total:* ${datos.cantidadTotal}`,
         `*Presentacion:* ${datos.termico}`,
         `*Precio unitario:* ${formatoMoneda.format(PRECIO_UNITARIO)}`,
         `*Total:* ${formatoMoneda.format(datos.total)}`,
@@ -141,8 +167,9 @@ form.addEventListener("reset", () => {
     }, 0);
 });
 
-cantidadInput.addEventListener("input", actualizarResumen);
-saborInput.addEventListener("change", actualizarResumen);
+cantidadesSabor.forEach((input) => {
+    input.addEventListener("input", actualizarResumen);
+});
 form.querySelectorAll('input[name="entrega"]').forEach((radio) => {
     radio.addEventListener("change", alternarDireccion);
 });

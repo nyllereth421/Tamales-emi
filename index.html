@@ -182,6 +182,41 @@
             grid-column: 1 / -1;
         }
 
+        .flavor-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .flavor-item {
+            min-height: 58px;
+            display: grid;
+            grid-template-columns: 1fr 112px;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: white;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        .flavor-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4d3a2f;
+            font-weight: 800;
+        }
+
+        .flavor-name i {
+            color: var(--brand);
+        }
+
+        .flavor-item input {
+            min-height: 40px;
+            text-align: center;
+            padding-inline: 8px;
+        }
+
         label {
             color: #4d3a2f;
             font-size: 0.9rem;
@@ -374,6 +409,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .flavor-item {
+                grid-template-columns: 1fr;
+            }
+
             .panel-heading {
                 align-items: center;
             }
@@ -434,18 +473,22 @@
                             <input id="telefono" name="telefono" type="tel" autocomplete="tel" placeholder="Ej: 310 123 4567" required>
                         </div>
 
-                        <div class="field">
-                            <label for="sabor">Sabor del tamal</label>
-                            <select id="sabor" name="sabor" required>
-                                <option value="Cerdo">Cerdo</option>
-                                <option value="Pollo">Pollo</option>
-                                <option value="Mixto">Mixto</option>
-                            </select>
-                        </div>
-
-                        <div class="field">
-                            <label for="cantidad">Cantidad</label>
-                            <input id="cantidad" name="cantidad" type="number" min="1" max="200" value="1" required>
+                        <div class="field full">
+                            <label>Sabores y cantidades</label>
+                            <div class="flavor-list">
+                                <label class="flavor-item">
+                                    <span class="flavor-name"><i class="fa-solid fa-bowl-food"></i> Cerdo</span>
+                                    <input class="cantidad-sabor" name="cerdo" type="number" min="0" max="200" value="1" data-sabor="Cerdo" aria-label="Cantidad de tamales de cerdo">
+                                </label>
+                                <label class="flavor-item">
+                                    <span class="flavor-name"><i class="fa-solid fa-drumstick-bite"></i> Pollo</span>
+                                    <input class="cantidad-sabor" name="pollo" type="number" min="0" max="200" value="0" data-sabor="Pollo" aria-label="Cantidad de tamales de pollo">
+                                </label>
+                                <label class="flavor-item">
+                                    <span class="flavor-name"><i class="fa-solid fa-utensils"></i> Mixto</span>
+                                    <input class="cantidad-sabor" name="mixto" type="number" min="0" max="200" value="0" data-sabor="Mixto" aria-label="Cantidad de tamales mixtos">
+                                </label>
+                            </div>
                         </div>
 
                         <fieldset class="field full">
