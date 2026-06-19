@@ -1,5 +1,6 @@
 const PRECIO_UNITARIO = 6000;
 const NUMERO_WHATSAPP = "573104852208";
+const URL_REGISTRO_EXCEL = "https://script.google.com/macros/s/AKfycbyVTcT__XtRo0iekFwxsjUE8S5G5Zfleri7T0uXTqG3D4dmPHzDx45BbXur_LIZ0n9hug/exec";
 
 const form = document.getElementById("formPedido");
 const cantidadesSabor = Array.from(document.querySelectorAll(".cantidad-sabor"));
@@ -141,7 +142,34 @@ function crearMensajeWhatsApp(datos) {
     ].join("\n");
 }
 
-form.addEventListener("submit", (event) => {
+function guardarPedidoEnExcel(datos) {
+    if (!URL_REGISTRO_EXCEL) {
+        return Promise.resolve();
+    }
+
+    const payload = JSON.stringify(datos);
+
+    if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
+        const enviado = navigator.sendBeacon(URL_REGISTRO_EXCEL, blob);
+
+        if (enviado) {
+            return Promise.resolve();
+        }
+    }
+
+    return fetch(URL_REGISTRO_EXCEL, {
+        method: "POST",
+        mode: "no-cors",
+        keepalive: true,
+        headers: {
+            "Content-Type": "text/plain;charset=UTF-8"
+        },
+        body: payload
+    });
+}
+
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const datos = leerDatosFormulario();
@@ -155,7 +183,17 @@ form.addEventListener("submit", (event) => {
 
     const mensaje = crearMensajeWhatsApp(datos);
     const whatsappUrl = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    const whatsappWindow = window.open("", "_blank", "noopener,noreferrer");
+
+    try {
+        await guardarPedidoEnExcel(datos);
+    } finally {
+        if (whatsappWindow) {
+            whatsappWindow.location.href = whatsappUrl;
+        } else {
+            window.location.href = whatsappUrl;
+        }
+    }
 });
 
 form.addEventListener("reset", () => {
