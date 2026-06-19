@@ -149,15 +149,9 @@ function guardarPedidoEnExcel(datos) {
 
     const payload = JSON.stringify(datos);
 
-    if (navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
-        const enviado = navigator.sendBeacon(URL_REGISTRO_EXCEL, blob);
-
-        if (enviado) {
-            return Promise.resolve();
-        }
-    }
-
+    // Se remueve navigator.sendBeacon ya que las extensiones bloqueadoras de publicidad (adblockers)
+    // interceptan y bloquean sistemáticamente esta API por clasificarla como telemetría (ERR_BLOCKED_BY_CLIENT).
+    // Usamos fetch normal con keepalive: true, que corre en segundo plano y tiene mayor compatibilidad.
     return fetch(URL_REGISTRO_EXCEL, {
         method: "POST",
         mode: "no-cors",
@@ -169,7 +163,7 @@ function guardarPedidoEnExcel(datos) {
     });
 }
 
-form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", (event) => {
     event.preventDefault();
 
     const datos = leerDatosFormulario();
@@ -183,17 +177,14 @@ form.addEventListener("submit", async (event) => {
 
     const mensaje = crearMensajeWhatsApp(datos);
     const whatsappUrl = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
-    const whatsappWindow = window.open("", "_blank", "noopener,noreferrer");
 
-    try {
-        await guardarPedidoEnExcel(datos);
-    } finally {
-        if (whatsappWindow) {
-            whatsappWindow.location.href = whatsappUrl;
-        } else {
-            window.location.href = whatsappUrl;
-        }
-    }
+    // Abrir WhatsApp inmediatamente en una pestaña nueva
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+
+    // Registrar pedido en Excel en segundo plano de manera no bloqueante
+    guardarPedidoEnExcel(datos).catch((err) => {
+        console.error("Error al registrar en Excel:", err);
+    });
 });
 
 form.addEventListener("reset", () => {
